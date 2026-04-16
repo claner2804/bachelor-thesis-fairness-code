@@ -27,11 +27,16 @@ def equal_opportunity_difference(y_true, y_pred, group) -> float:
 
 
 def compute_group_summary(y_true, y_pred, group) -> pd.DataFrame:
+    y_true = pd.Series(y_true).reset_index(drop=True)
+    y_pred = pd.Series(y_pred).reset_index(drop=True)
+    group = pd.Series(group).reset_index(drop=True)
+
     rows = []
-    for g in sorted(pd.Series(group).unique()):
-        mask = pd.Series(group) == g
-        y_true_g = pd.Series(y_true)[mask]
-        y_pred_g = pd.Series(y_pred)[mask]
+
+    for g in sorted(group.unique()):
+        mask = group == g
+        y_true_g = y_true[mask]
+        y_pred_g = y_pred[mask]
 
         positive_rate = float(y_pred_g.mean()) if len(y_pred_g) else 0.0
 
@@ -49,6 +54,7 @@ def compute_group_summary(y_true, y_pred, group) -> pd.DataFrame:
                 "true_positive_rate": true_positive_rate,
             }
         )
+
     return pd.DataFrame(rows)
 
 
