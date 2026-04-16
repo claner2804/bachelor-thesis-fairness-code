@@ -1,0 +1,5 @@
+[project]
+name = "bachelor-thesis-fairness"
+version = "0.1.0"
+description = "Starterprojekt fuer eine visuelle Bias-Simulation in Machine Learning"
+requires-python = ">=3.10"
