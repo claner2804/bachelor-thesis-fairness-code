@@ -1,0 +1,173 @@
+**Überblick**
+
+Projekt bildet eine komplette Fairness-Pipeline ab:
+
+`synthetische Daten -> Bias einbauen -> Modell trainieren -> Vorhersagen erzeugen -> Performance/Fairness messen -> Ergebnisse visualisieren`
+
+
+**Root-Dateien**
+
+[README.md](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/README.md)  
+Beschreibt das Projekt auf hoher Ebene: Thema der Bachelorarbeit, Setup mit `venv`, Installation der Abhängigkeiten und wie man entweder die Notebooks oder die Streamlit-App startet. Außerdem nennt die Datei die Kernpipeline des Projekts.
+
+[pyproject.toml](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/pyproject.toml)  
+Enthält minimale Projektmetadaten: Projektname, Version, Kurzbeschreibung und die benötigte Python-Version.
+
+[requirements.txt](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/requirements.txt)  
+Listet die Python-Bibliotheken auf, die das Projekt braucht: `numpy`, `pandas`, `scikit-learn`, `matplotlib`, `streamlit`, `jupyter`.
+
+**App**
+
+[app/streamlit_app.py](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/app/streamlit_app.py)  
+Das ist die interaktive Benutzeroberfläche. Die Datei:
+- baut die Streamlit-Seite auf,
+- bietet Sidebar-Regler für Parameter wie Datensatzgröße, Gruppenanteile, Bias-Stärke, Threshold und Seed,
+- startet über `run_single_experiment(...)` einen kompletten Experimentlauf,
+- zeigt Performance- und Fairnessmetriken,
+- rendert Diagramme zur Gruppenverteilung, Labelverteilung, Modell-/Datenverteilung und Fairness pro Gruppe,
+- zeigt zusätzlich eine kleine didaktische Erklärung der Fairness-Metriken.
+
+**Konfiguration**
+
+[src/config.py](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/src/config.py)  
+Speichert Standardwerte für das Projekt, z. B. Seed, Anzahl Samples, Test-Split, Decision-Threshold, Gruppenanteil und Bias-Parameter. Praktisch als zentrale Default-Konfiguration.
+
+[src/__init__.py](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/src/__init__.py)  
+Ist leer und markiert `src` als Python-Paket.
+
+**Daten**
+
+[src/data/loader.py](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/src/data/loader.py)  
+Sehr einfache Hilfsdatei zum Laden einer CSV-Datei in ein `pandas.DataFrame`.
+
+[src/data/preprocessing.py](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/src/data/preprocessing.py)  
+Hilfsfunktionen fürs Preprocessing:
+- trennt Features `X` und Zielvariable `y`,
+- extrahiert die Gruppenspalte, standardmäßig `gender`.
+Die Datei ist eher ein Utility-Baustein für spätere Erweiterungen.
+
+[src/data/synthetic.py](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/src/data/synthetic.py)  
+Erzeugt den synthetischen Datensatz für das gesamte Projekt.  
+Die Datei:
+- erstellt eine sensible Variable `gender`,
+- erzeugt daraus leicht unterschiedliche Verteilungen für `qualification` und `experience`,
+- berechnet daraus einen latenten `score`,
+- wandelt den Score per Sigmoid in eine Wahrscheinlichkeit um,
+- sampled daraus das binäre Ziel `label`.
+Das ist die Basis, auf der alle weiteren Experimente laufen.
+
+**Bias**
+
+[src/bias/injection.py](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/src/bias/injection.py)  
+Hier wird Bias künstlich in den Datensatz eingebaut:
+- `inject_group_imbalance(...)`: verändert die Gruppenverteilung durch Sampling,
+- `inject_label_bias(...)`: bevorzugt eine Gruppe beim Erzeugen positiver Labels,
+- `remove_sensitive_attribute(...)`: entfernt das sensible Attribut aus dem Datensatz.
+Das ist die zentrale Datei, um verschiedene Diskriminierungs-Szenarien zu simulieren.
+
+[src/bias/scenarios.py](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/src/bias/scenarios.py)  
+Definiert eine `ScenarioConfig`-Datenklasse und mehrere vordefinierte Szenarien wie `baseline`, `imbalance_low`, `label_bias_high` oder `combined`.  
+Die Datei strukturiert also typische Experimentkonfigurationen.
+
+**Modelle**
+
+[src/models/train.py](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/src/models/train.py)  
+Trainiert ein logistisches Regressionsmodell.  
+Die Datei:
+- nimmt Features, Labels und Gruppenzugehörigkeit aus dem DataFrame,
+- splittet in Train/Test,
+- trainiert `LogisticRegression`,
+- gibt Modell und alle relevanten Teilmengen zurück.
+Wichtig: Die Gruppenspalte wird getrennt mitgeführt, damit danach Fairness gemessen werden kann.
+
+[src/models/predict.py](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/src/models/predict.py)  
+Erzeugt aus dem trainierten Modell:
+- Wahrscheinlichkeiten,
+- binäre Vorhersagen anhand eines frei wählbaren Thresholds.
+Damit kann man z. B. untersuchen, wie sich der Schwellenwert auf Fairness auswirkt.
+
+**Metriken**
+
+[src/metrics/performance.py](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/src/metrics/performance.py)  
+Berechnet klassische Modellmetriken:
+- Accuracy
+- Precision
+- Recall
+- F1
+
+[src/metrics/fairness.py](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/src/metrics/fairness.py)  
+Berechnet die Fairness-Auswertung:
+- `demographic_parity_difference`: Unterschied der positiven Vorhersageraten zwischen den Gruppen,
+- `equal_opportunity_difference`: Unterschied der True-Positive-Raten zwischen den Gruppen,
+- `compute_group_summary(...)`: erstellt eine gruppenweise Übersicht mit Gruppengröße, positiver Vorhersagerate und TPR,
+- `compute_fairness_metrics(...)`: bündelt die wichtigsten Fairnesskennzahlen in einem Dictionary.
+Das ist die Kern-Datei für deine Fairnessanalyse.
+
+**Experimente**
+
+[src/experiments/runner.py](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/src/experiments/runner.py)  
+Das ist die wichtigste Orchestrierungsdatei.  
+Sie verbindet alle anderen Module zu einem vollständigen Experiment:
+- synthetische Daten erzeugen,
+- optional Gruppenungleichgewicht und Label-Bias einbauen,
+- Features definieren,
+- Modell trainieren,
+- Vorhersagen erzeugen,
+- Performance- und Fairnessmetriken berechnen,
+- Ergebnisobjekt mit DataFrame, Modell, Predictions und Auswertungen zurückgeben.
+Zusätzlich kann `run_scenario_grid(...)` mehrere Konfigurationen nacheinander ausführen und in einer Tabelle sammeln.
+
+[src/experiments/export_results.py](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/src/experiments/export_results.py)  
+Hilfsdatei zum Exportieren von Ergebnis-DataFrames als CSV. Erstellt bei Bedarf automatisch die Zielordner.
+
+**Visualisierung**
+
+[src/visualization/plots_data.py](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/src/visualization/plots_data.py)  
+Erstellt einfache Balkendiagramme für:
+- Gruppenverteilung (`gender`)
+- Labelverteilung (`label`)
+
+[src/visualization/plots_model.py](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/src/visualization/plots_model.py)  
+Erstellt ein Scatterplot von `qualification` gegen `experience`.  
+Je nach Übergabe färbt es nach:
+- echten Labels oder
+- Modellvorhersagen.
+So kann man visuell sehen, wie das Modell Entscheidungen im Merkmalsraum trifft.
+
+[src/visualization/plots_fairness.py](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/src/visualization/plots_fairness.py)  
+Erstellt ein gruppiertes Balkendiagramm für Fairness-relevante Gruppenmetriken:
+- positive prediction rate
+- true positive rate
+
+**Notebooks**
+
+[notebooks/01_synthetic_data.ipynb](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/notebooks/01_synthetic_data.ipynb)  
+Ein Einstiegsnotebook, das den synthetischen Datensatz erzeugt und inspiziert.
+
+[notebooks/02_bias_injection.ipynb](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/notebooks/02_bias_injection.ipynb)  
+Zeigt, wie Gruppenungleichgewicht und Label-Bias in die Daten eingebaut werden.
+
+[notebooks/03_model_training.ipynb](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/notebooks/03_model_training.ipynb)  
+Führt einen kompletten Experimentlauf aus und zeigt Performance- und Fairnessmetriken.
+
+[notebooks/04_fairness_metrics.ipynb](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/notebooks/04_fairness_metrics.ipynb)  
+Fokussiert stärker auf die Fairness-Auswertung und zeigt die gruppenweise Zusammenfassung.
+
+[notebooks/05_adult_income.ipynb](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/notebooks/05_adult_income.ipynb)  
+Ist aktuell ein Platzhalter für einen späteren realen Datensatz (`adult_income.csv`). Prüft im Moment nur, ob die Datei vorhanden ist.
+
+[notebooks/06_result_plots.ipynb](/Users/admin/Desktop/BACHELORARBEIT/bachelor-thesis-fairness-code/notebooks/06_result_plots.ipynb)  
+Zeigt, wie Ergebnisplots aus einem Experiment erzeugt werden, speziell die Fairness-Balkengrafik.
+
+**Kurzfazit**
+
+Inhaltlich ist dein Projekt sehr sauber aufgeteilt:
+- `src/data`: Daten erzeugen/laden
+- `src/bias`: Bias-Szenarien simulieren
+- `src/models`: Modelltraining und Vorhersagen
+- `src/metrics`: Performance und Fairness messen
+- `src/visualization`: Ergebnisse visualisieren
+- `src/experiments`: alles zu einem Experiment zusammenbauen
+- `app/`: interaktive Demo
+- `notebooks/`: schrittweise, didaktische Exploration
+
