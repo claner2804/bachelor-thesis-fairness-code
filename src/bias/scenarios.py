@@ -13,10 +13,10 @@ class ScenarioConfig:
 
 
 DEFAULT_SCENARIOS = [
-    ScenarioConfig(name="baseline", group_proportion=0.5, imbalance_target=None, label_bias_strength=0.0),
-    ScenarioConfig(name="imbalance_low", group_proportion=0.5, imbalance_target=0.4, label_bias_strength=0.0),
-    ScenarioConfig(name="imbalance_high", group_proportion=0.5, imbalance_target=0.2, label_bias_strength=0.0),
-    ScenarioConfig(name="label_bias_low", group_proportion=0.5, imbalance_target=None, label_bias_strength=0.1),
-    ScenarioConfig(name="label_bias_high", group_proportion=0.5, imbalance_target=None, label_bias_strength=0.25),
-    ScenarioConfig(name="combined", group_proportion=0.5, imbalance_target=0.25, label_bias_strength=0.25),
+    ScenarioConfig(name="baseline", group_proportion=0.5, imbalance_target=None, label_bias_strength=0.0), #A
+    ScenarioConfig(name="imbalance_low", group_proportion=0.5, imbalance_target=0.4, label_bias_strength=0.0), #B
+    ScenarioConfig(name="imbalance_high", group_proportion=0.5, imbalance_target=0.2, label_bias_strength=0.0), #C
+    ScenarioConfig(name="label_bias_low", group_proportion=0.5, imbalance_target=None, label_bias_strength=0.1), #D
+    ScenarioConfig(name="label_bias_high", group_proportion=0.5, imbalance_target=None, label_bias_strength=0.25), #E
+    ScenarioConfig(name="combined", group_proportion=0.5, imbalance_target=0.25, label_bias_strength=0.25), #F
 ]
